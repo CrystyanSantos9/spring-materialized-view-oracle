@@ -1,0 +1,66 @@
+#version: '2'
+version: '2.4'
+
+networks:
+  app-tier:
+    driver: bridge
+
+services:
+  redis-cluster-master:
+    networks:
+      - app-tier
+    image: redis:5.0.3
+    container_name: redis-cluster-master-federated
+    cpu_count: 1
+    mem_limit: 1024M
+    mem_reservation: 512m
+    restart: always
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    command:
+      - "redis-server"
+      - "--cluster-enabled yes"
+      - "--cluster-config-file nodes.conf"
+      - "--cluster-node-timeout 5000"
+      - "--notify-keyspace-events KEA"
+      - "--loglevel debug"
+      - "--appendonly no"
+      - "--save 900 1"
+      - "--save 300 10"
+    #    volumes:
+    #      - /data/redis-master:/data
+    ports:
+      - "6379:6379"
+
+  redis-cluster-replica:
+    network_mode: host
+    image: redis:5.0.3
+    container_name: redis-cluster-replica-federated
+    cpu_count: 1
+    mem_limit: 1024M
+    mem_reservation: 512m
+    restart: always
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    command:
+      - "redis-server"
+      - "--port 6380"
+      - "--cluster-enabled yes"
+      - "--cluster-config-file nodes.conf"
+      - "--cluster-node-timeout 5000"
+      - "--cluster-slave-validity-factor 0"
+      - "--cluster-replica-validity-factor 0"
+      - "--appendonly no"
+      - "--save 900 1"
+      - "--save 300 10"
+  #   volumes:
+  #      - /data/redis-replica:/data
+  redis-sentinel:
+    image: 'bitnami/redis-sentinel:latest'
+    environment:
+      - REDIS_MASTER_HOST=localhost
+      - REDIS_SENTINEL_RESOLVE_HOSTNAMES=yes
+    ports:
+      - '26379:26379'
+    networks:
+      - app-tier
