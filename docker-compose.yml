@@ -22,3 +22,16 @@ services:
       - '26379:26379'
     networks:
       - app-tier
+  oracle-db:
+    image: 'container-registry.oracle.com/database/enterprise:19.3.0.0'
+    container_name: 'oracle19c'
+    environment:
+      - ORACLE_CHARACTERSET=WE8ISO8859P15
+      - ORACLE_PDB=suporte
+      - ORACLE_PWD=suporte
+      - ORACLE_MEM=2000
+    volumes:
+      - ./opt/oracle/oradata
+    ports:
+      - '1521:1521'
+      - '5500:5500'
